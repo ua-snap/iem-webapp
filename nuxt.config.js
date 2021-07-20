@@ -41,6 +41,7 @@ export default {
     '@nuxt/content',
     // https://www.npmjs.com/package/nuxt-leaflet
     'nuxt-leaflet',
+    '@nuxt/http',
   ],
 
   // Axios module configuration: https://go.nuxtjs.dev/config-axios
