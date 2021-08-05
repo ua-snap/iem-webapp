@@ -1,5 +1,5 @@
 """
-Create a multiband raster of means summarized by variable, period, model, scenario, and season, using the following datasets:
+Create GeoTIFFs rasters of means summarized by variable, period, model, scenario, and season, using the following datasets:
 * [Temperature (`tas`)](http://ckan.snap.uaf.edu/dataset/projected-monthly-and-derived-temperature-products-771m-cmip5-ar5)
 * [Precipitation (`pr`)](http://ckan.snap.uaf.edu/dataset/projected-monthly-and-derived-temperature-products-771m-cmip5-ar5)
 
@@ -17,11 +17,9 @@ e.g.,
 `export GTIFF_FOLDER=ar5_tas_pr_decadal_seasonal`  
 `export NCORES=30`  
 
-<<<<<<< HEAD
 Write the output arrays to individual rasters in a folder named `ar5_tas_pr_decadal_mean_seasonal_aggregated/` as `<variable>_decadal_mean_<season>_mean_c_<model>_<scenario>_<period>.tif` (folder is created if not found).
-=======
-Write the output arrays to individual rasters in a folder named `iem_tas_pr_decadal_mean_seasonal_aggregate/` as `<variable>_<period>_<season>_<model>_<scenario>.tiff` (created if not found).
->>>>>>> c02a414fb866f1689fbbc30279df698abc53f62f
+
+Also create a netCDF file of these data one levels up from the GeoTIFF write dir (`ar5_tas_pr_decadal_seasonal_aggregated.nc`)
 
 Note - this runs in about 10 seconds with 30 cores and ~260GB of RAM.. may be 
 substantially slower on less performant hardware
@@ -36,7 +34,10 @@ from multiprocessing import Pool
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import rasterio as rio
+import xarray as xr
+from rasterio.warp import transform
 
 
 def aggregate_gtiffs(fps, out_fp, meta):
@@ -64,8 +65,62 @@ def aggregate_gtiffs(fps, out_fp, meta):
     
     with rio.open(out_fp, "w", **meta) as dst:
         dst.write(arr, 1)
+    
+    fn_components = out_fp.name.split(".tif")[0].split("_")
+    variable, start_year, end_year, season, model, scenario = [
+        fn_components[i] for i in [0, -2, -1, 3, -4, -3]
+    ]
+    period = f"{start_year}_{end_year}"
+    
+    out_di = {
+        "arr": arr,
+        "variable": variable,
+        "period": period,
+        "season": season,
+        "model": model,
+        "scenario": scenario,
+    }
 
-    return arr
+    return out_di
+
+
+def rm_var(di):
+    """Helper to remove the 'variable' key from 
+    aggregation output dict
+    """
+    del di["variable"]
+    return di
+
+
+def make_arr_from_aggr(aggr, dimnames):
+    """Make the array structured according to the various axes
+    to create an xarray.DataArray from
+    
+    We need an array shaped exactly according to the dimensions 
+      to be used in the xarray.DataArrays/.DataSet
+    Not sure the best way to do this, but here we start with an 
+      empty array of correct shape will populate
+    """
+    # 
+    # create empty array
+    ny, nx = aggr[0]["arr"].shape
+    arr_shape = (
+        len(PERIODS), len(SEASONS), len(MODELS), len(SCENARIOS), ny, nx
+    )
+    out_arr = np.empty(arr_shape, dtype=np.float32)
+    
+    # restructure data for indexing by dimension names
+    df = pd.DataFrame(aggr).set_index(dimnames).sort_index()
+        
+    # run nested loop to correctly populate empty array
+    for period, pn in zip(PERIODS, range(arr_shape[0])):
+        for season, sn in zip(SEASONS, range(arr_shape[1])):
+            for model, mn in zip(MODELS, range(arr_shape[2])):
+                for scenario, cn in zip(SCENARIOS, range(arr_shape[3])):
+                    out_arr[pn, sn, mn, cn] = df.loc[(period, season, model, scenario)]["arr"]
+                    
+    return out_arr
+
 
 
 if __name__ == "__main__":
@@ -80,27 +135,28 @@ if __name__ == "__main__":
     ncores = int(os.getenv("NCORES"))
     # Specify all group combinations to generate file paths,
     #   and run the aggregation in parallel.
-    models = ["CCSM4", "MRI-CGCM3"]
-    scenarios = ["rcp45", "rcp85"]
-    seasons = ["DJF", "MAM", "JJA", "SON"]
-    variables = ["tas", "pr"]
-    units_lu = {"tas": "mean_c", "pr": "total_mm"}
     decades = [
         f"{decade_start}_{decade_start + 9}"
         for decade_start in np.arange(2010, 2091, 10)
     ]
-    periods = {
-        "2040_2070": decades[3:6],
-        "2070_2100": decades[-3:],
+    PERIODS = ["2040_2070", "2070_2100"]
+    periods_lu = {
+        PERIODS[0]: decades[3:6],
+        PERIODS[1]: decades[-3:],
     }
+    MODELS = ["CCSM4", "MRI-CGCM3"]
+    SCENARIOS = ["rcp45", "rcp85"]
+    SEASONS = ["DJF", "MAM", "JJA", "SON"]
+    variables = ["tas", "pr"]
+    units_lu = {variables[0]: "mean_c", variables[1]: "total_mm"}
 
     # get metadata from a file (in case write to individual rasters)
     temp_fp = str(in_fp).format(
         variables[0],
-        seasons[0],
+        SEASONS[0],
         units_lu[variables[0]],
-        models[0],
-        scenarios[0],
+        MODELS[0],
+        SCENARIOS[0],
         decades[0],
     )
     with rio.open(temp_fp) as src:
@@ -118,14 +174,14 @@ if __name__ == "__main__":
 
     # doing the same thing for all above variables! easy pool-ing..right??
     modifiers = list(
-        itertools.product(periods.keys(), variables, seasons, models, scenarios)
+        itertools.product(PERIODS, variables, SEASONS, MODELS, SCENARIOS)
     )
 
     # append tuple of decades, along with units based on period and variable
     args = []
     for t in modifiers:
         t = list(t)
-        run_decades = periods[t[0]]
+        run_decades = periods_lu[t[0]]
         fps = [
             str(in_fp).format(t[1], t[2], units_lu[t[1]], t[3], t[4], decade)
             for decade in run_decades
@@ -138,6 +194,7 @@ if __name__ == "__main__":
         args.append((fps, out_fp, meta))
 
     print(f"Aggregating decadal means using {ncores} cores", sep="...")
+    
     tic = time.perf_counter()
     with Pool(ncores) as p:
         aggr_out = p.starmap(aggregate_gtiffs, args)
@@ -148,6 +205,7 @@ if __name__ == "__main__":
     #   a single variable-period-model-scenario-season
     #   matches mean of expected input rasters
     print("Conducting a brief QC on the aggregates", sep="...")
+    
     tic = time.perf_counter()
     test_fps = args[0][0]
     first_fp = test_fps[0]
@@ -163,7 +221,7 @@ if __name__ == "__main__":
     # "top left" pixel shoudl be nodata
     new_arr[new_arr == new_arr[0, 0, 0]] = np.nan
     # set test case arr nodata back to -9999 for comparison
-    test_arr = aggr_out[0].copy()
+    test_arr = aggr_out[0]["arr"].copy()
     test_arr[np.isnan(test_arr)] = NEW_NODATA
 
     with warnings.catch_warnings():
@@ -177,4 +235,63 @@ if __name__ == "__main__":
     qc_result = np.all(np.isclose(test_arr, new_aggr_arr))
     print(f"QC complete, {round(time.perf_counter() - tic, 1)}s.")
     print("Test array matches subject array: ", qc_result)
+
+    print("Creating xarray.DataSet from aggregated arrays")
+    tic = time.perf_counter()
+
+    # first, break aggr_out by variable
+    tas_aggr = [rm_var(di.copy()) for di in aggr_out if di["variable"] == "tas"]
+    pr_aggr = [rm_var(di.copy()) for di in aggr_out if di["variable"] == "pr" ]
+
+    dimnames = ["period", "season", "model", "scenario"]
+    tas_arr = make_arr_from_aggr(tas_aggr, dimnames)
+    pr_arr = make_arr_from_aggr(pr_aggr, dimnames)
+
+    # generate the lat and lon grids
+    print("Generating lat/lon grids..", sep="...")
     
+    with xr.open_rasterio(temp_fp) as da:
+        # Compute the lon/lat coordinates with rasterio.warp.transform
+        ny, nx = len(da["y"]), len(da["x"])
+        x, y = np.meshgrid(da["x"], da["y"])
+
+        # Rasterio works with 1D arrays
+        lon, lat = transform(
+            da.crs, {'init': 'EPSG:4326'}, x.flatten(), y.flatten()
+        )
+        lon = np.asarray(lon, dtype=np.float32).reshape((ny, nx))
+        lat = np.asarray(lat, dtype=np.float32).reshape((ny, nx))
+
+    print(f"done, {round(time.perf_counter() - tic, 1)}s.")
+    tic = time.perf_counter()
+
+    xy_dimnames = ["y", "x"]
+    dimnames.extend(xy_dimnames)
+    ds = xr.Dataset(
+        data_vars={
+            "tas": (dimnames, tas_arr),
+            "pr": (dimnames, pr_arr)
+        },
+        coords={
+            "period": PERIODS,
+            "season": SEASONS,
+            "model": MODELS,
+            "scenario": SCENARIOS,
+            "lon": (xy_dimnames, lon),
+            "lat": (xy_dimnames, lat)
+        },
+        attrs={},
+    )
+
+    print("Writing to netCDF", sep="...")
+    tic = time.perf_counter()
+    
+    # specify encoding to try to compress?
+    encoding = {
+        "tas": {'zlib': True, "complevel": 9},
+        "pr": {'zlib': True, "complevel": 9},
+    }
+    nc_fp = out_fp.parent.parent.joinpath("ar5_tas_pr_decadal_seasonal_aggregated.nc")
+    ds.to_netcdf(nc_fp, encoding=encoding)
+
+    print(f"NetCDF created, written to {nc_fp}, {round(time.perf_counter() - tic, 1)}s.")
