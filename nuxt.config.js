@@ -57,6 +57,8 @@ export default {
   env: {
     geoserverUrl:
       process.env.GEOSERVER_URL || 'https://gs.mapventure.org/geoserver/wms',
+    rasdamanUrl:
+      process.env.GEOSERVER_URL || 'https://apollo.snap.uaf.edu/rasdaman/ows',
   },
 
   // Router customizations

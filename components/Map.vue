@@ -11,6 +11,18 @@ export default {
 		this.map = L.map('map', this.getBaseMapAndLayers())
 		new this.$L.Control.Zoom({ position: 'topright' }).addTo(this.map)
 
+		this.layer = this.$L.tileLayer.wms(process.env.rasdamanUrl, {
+			transparent: true,
+			srs: 'EPSG:3338',
+			format: 'image/png',
+			version: '1.3.0',
+			layers: ['iem_temp_precip_wms'],
+			styles: 'iem_temp_ccsm4_rcp85_2070-2100',
+			continuousWorld: true,
+		})
+
+		this.map.addLayer(this.layer)
+
 		this.map.on('click', this.handleMapClick)
 	},
 	data() {
@@ -23,7 +35,7 @@ export default {
 		handleMapClick(event) {
 			this.latlng = {
 				lat: event.latlng.lat.toFixed(4),
-				lng: event.latlng.lng.toFixed(4)
+				lng: event.latlng.lng.toFixed(4),
 			}
 			this.$router.push('/report/' + this.latlng.lat + '/' + this.latlng.lng)
 		},
