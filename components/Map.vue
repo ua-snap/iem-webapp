@@ -221,7 +221,7 @@ export default {
 				zoom: 1,
 				minZoom: 0,
 				maxZoom: 6,
-				center: [64, -148],
+				center: [64, -155],
 				scrollWheelZoom: false,
 				crs: proj,
 				continuousWorld: true,
@@ -240,6 +240,6 @@ export default {
 <style>
 #map {
 	height: 100vh;
-	width: 100vw;
+	width: 100%;
 }
 </style>
