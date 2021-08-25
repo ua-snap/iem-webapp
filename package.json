@@ -20,6 +20,7 @@
     "nuxt": "^2.14.12",
     "nuxt-buefy": "^0.4.4",
     "nuxt-leaflet": "0.0.25",
+    "plotly.js-dist-min": "^2.3.1",
     "proj4": "^2.7.4",
     "proj4leaflet": "^1.0.2",
     "vuex-router-sync": "^5.0.0"

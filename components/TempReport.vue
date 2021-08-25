@@ -10,6 +10,7 @@
 		<div class="content-placeholder">
 			What text might go here, introducing Temperature?
 		</div>
+		<div id="myDiv"></div>
 		<table class="table" v-if="reportData">
 			<thead>
 				<tr>
@@ -127,5 +128,147 @@
 export default {
 	name: 'ReportTable',
 	props: ['reportData', 'units'],
+	mounted() {
+		this.renderPlot()
+	},
+	watch: {
+		reportData: function () {
+			this.renderPlot()
+		},
+	},
+	methods: {
+		renderPlot: function () {
+			let reportData = this.reportData
+			if (!reportData) {
+				return
+			}
+			var CCSM4_RCP45_2040_2070 = {
+				x: [
+					['2040-2070', '2040-2070', '2040-2070', '2040-2070'],
+					['Winter', 'Spring', 'Summer', 'Fall'],
+				],
+				y: [
+					reportData['2040_2070']['DJF']['CCSM4']['rcp45']['tas'],
+					reportData['2040_2070']['MAM']['CCSM4']['rcp45']['tas'],
+					reportData['2040_2070']['JJA']['CCSM4']['rcp45']['tas'],
+					reportData['2040_2070']['SON']['CCSM4']['rcp45']['tas'],
+				],
+				name: 'NCAR-CCSM4, RCP 4.5, 2040-2070',
+				type: 'scatter',
+			}
+			var CCSM4_RCP85_2040_2070 = {
+				x: [
+					['2040-2070', '2040-2070', '2040-2070', '2040-2070'],
+					['Winter', 'Spring', 'Summer', 'Fall'],
+				],
+				y: [
+					reportData['2040_2070']['DJF']['CCSM4']['rcp85']['tas'],
+					reportData['2040_2070']['MAM']['CCSM4']['rcp85']['tas'],
+					reportData['2040_2070']['JJA']['CCSM4']['rcp85']['tas'],
+					reportData['2040_2070']['SON']['CCSM4']['rcp85']['tas'],
+				],
+				name: 'NCAR-CCSM4, RCP 8.5, 2040-2070',
+				type: 'scatter',
+			}
+			var MRI_CGCM3_RCP45_2040_2070 = {
+				x: [
+					['2040-2070', '2040-2070', '2040-2070', '2040-2070'],
+					['Winter', 'Spring', 'Summer', 'Fall'],
+				],
+				y: [
+					reportData['2040_2070']['DJF']['MRI-CGCM3']['rcp45']['tas'],
+					reportData['2040_2070']['MAM']['MRI-CGCM3']['rcp45']['tas'],
+					reportData['2040_2070']['JJA']['MRI-CGCM3']['rcp45']['tas'],
+					reportData['2040_2070']['SON']['MRI-CGCM3']['rcp45']['tas'],
+				],
+				name: 'MRI-CGCM3, RCP 4.5, 2040-2070',
+				type: 'scatter',
+			}
+			var MRI_CGCM3_RCP85_2040_2070 = {
+				x: [
+					['2040-2070', '2040-2070', '2040-2070', '2040-2070'],
+					['Winter', 'Spring', 'Summer', 'Fall'],
+				],
+				y: [
+					reportData['2040_2070']['DJF']['MRI-CGCM3']['rcp85']['tas'],
+					reportData['2040_2070']['MAM']['MRI-CGCM3']['rcp85']['tas'],
+					reportData['2040_2070']['JJA']['MRI-CGCM3']['rcp85']['tas'],
+					reportData['2040_2070']['SON']['MRI-CGCM3']['rcp85']['tas'],
+				],
+				name: 'MRI-CGCM3, RCP 8.5, 2040-2070',
+				type: 'scatter',
+			}
+			// 2070-2100
+			var CCSM4_RCP45_2070_2100 = {
+				x: [
+					['2070-2100', '2070-2100', '2070-2100', '2070-2100'],
+					['Winter', 'Spring', 'Summer', 'Fall'],
+				],
+				y: [
+					reportData['2070_2100']['DJF']['CCSM4']['rcp45']['tas'],
+					reportData['2070_2100']['MAM']['CCSM4']['rcp45']['tas'],
+					reportData['2070_2100']['JJA']['CCSM4']['rcp45']['tas'],
+					reportData['2070_2100']['SON']['CCSM4']['rcp45']['tas'],
+				],
+				name: 'NCAR-CCSM4, RCP 4.5, 2070-2100',
+				type: 'scatter',
+			}
+			var CCSM4_RCP85_2070_2100 = {
+				x: [
+					['2070-2100', '2070-2100', '2070-2100', '2070-2100'],
+					['Winter', 'Spring', 'Summer', 'Fall'],
+				],
+				y: [
+					reportData['2070_2100']['DJF']['CCSM4']['rcp85']['tas'],
+					reportData['2070_2100']['MAM']['CCSM4']['rcp85']['tas'],
+					reportData['2070_2100']['JJA']['CCSM4']['rcp85']['tas'],
+					reportData['2070_2100']['SON']['CCSM4']['rcp85']['tas'],
+				],
+				name: 'NCAR-CCSM4, RCP 8.5, 2070-2100',
+				type: 'scatter',
+			}
+			var MRI_CGCM3_RCP45_2070_2100 = {
+				x: [
+					['2070-2100', '2070-2100', '2070-2100', '2070-2100'],
+					['Winter', 'Spring', 'Summer', 'Fall'],
+				],
+				y: [
+					reportData['2070_2100']['DJF']['MRI-CGCM3']['rcp45']['tas'],
+					reportData['2070_2100']['MAM']['MRI-CGCM3']['rcp45']['tas'],
+					reportData['2070_2100']['JJA']['MRI-CGCM3']['rcp45']['tas'],
+					reportData['2070_2100']['SON']['MRI-CGCM3']['rcp45']['tas'],
+				],
+				name: 'MRI-CGCM3, RCP 4.5, 2070-2100',
+				type: 'scatter',
+			}
+			var MRI_CGCM3_RCP85_2070_2100 = {
+				x: [
+					['2070-2100', '2070-2100', '2070-2100', '2070-2100'],
+					['Winter', 'Spring', 'Summer', 'Fall'],
+				],
+				y: [
+					reportData['2070_2100']['DJF']['MRI-CGCM3']['rcp85']['tas'],
+					reportData['2070_2100']['MAM']['MRI-CGCM3']['rcp85']['tas'],
+					reportData['2070_2100']['JJA']['MRI-CGCM3']['rcp85']['tas'],
+					reportData['2070_2100']['SON']['MRI-CGCM3']['rcp85']['tas'],
+				],
+				name: 'MRI-CGCM3, RCP 8.5, 2070-2100',
+				type: 'scatter',
+			}
+
+			var data = [
+				CCSM4_RCP45_2040_2070,
+				CCSM4_RCP85_2040_2070,
+				MRI_CGCM3_RCP45_2040_2070,
+				MRI_CGCM3_RCP85_2040_2070,
+				CCSM4_RCP45_2070_2100,
+				CCSM4_RCP85_2070_2100,
+				MRI_CGCM3_RCP45_2070_2100,
+				MRI_CGCM3_RCP85_2070_2100,
+			]
+
+			this.$Plotly.newPlot('myDiv', data)
+		},
+	},
 }
 </script>
