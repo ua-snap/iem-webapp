@@ -18,6 +18,11 @@ label.label {
   font-weight: 600;
 }
 
+// Narrow the default content blocks, in general.
+.content {
+  max-width: 50em;
+}
+
 .content-wrapper {
   max-width: 50rem;
   margin-left: auto;

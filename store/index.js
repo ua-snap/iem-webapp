@@ -49,7 +49,7 @@ export const getters = {
     // Lat/lon!
     if (state.route.params.lat && state.route.params.lng) {
       return (
-        state.route.params.lat + '&deg;N, ' + state.route.params.lng + '&deg;E'
+        state.route.params.lat + '&deg;N, ' + Math.abs(state.route.params.lng) + '&deg;W'
       )
     }
 

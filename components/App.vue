@@ -16,9 +16,6 @@
       <div v-show="this.reportIsVisible" class="report-wrapper">
         <Report></Report>
       </div>
-      <div class="content-placeholder">
-        What text might go here, at the end of the page before the footer?
-      </div>
     </client-only>
   </div>
 </template>
